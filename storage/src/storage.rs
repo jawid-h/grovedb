@@ -2,7 +2,16 @@
 /// Should be able to hold storage connection and to start transaction when
 /// needed. All query operations will be exposed using [StorageContext].
 pub trait Storage<'db> {
+    /// Storage transaction type
     type Transaction;
+
+    /// Storage context type
+    type StorageContext;
+
+    /// Storage context type for transactional data
+    type TransactionalStorageContext;
+
+    /// Error type
     type Error: std::error::Error + Send + Sync + 'static;
 
     /// Starts a new transaction
@@ -16,6 +25,20 @@ pub trait Storage<'db> {
 
     /// Forces data to be written
     fn flush(&self) -> Result<(), Self::Error>;
+
+    /// Make storage context for a subtree with path
+    fn get_storage_context<'p, P>(&'db self, path: P) -> Self::StorageContext
+    where
+        P: IntoIterator<Item = &'p [u8]>;
+
+    /// Make storage context for a subtree on transactional data
+    fn get_transactional_storage_context<'p, P>(
+        &'db self,
+        path: P,
+        transaction: &'db Self::Transaction,
+    ) -> Self::TransactionalStorageContext
+    where
+        P: IntoIterator<Item = &'p [u8]>;
 }
 
 /// Storage context.
