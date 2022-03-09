@@ -923,7 +923,7 @@ fn test_subtree_pairs_iterator() {
     let storage_context = db
         .db
         .db
-        .get_prefixed_context_from_path([TEST_LEAF, b"subtree1"]);
+        .get_storage_context([TEST_LEAF, b"subtree1"]);
     let mut iter = Element::iterator(storage_context.raw_iter());
     assert_eq!(iter.next().unwrap(), Some((b"key1".to_vec(), element)));
     assert_eq!(iter.next().unwrap(), Some((b"key2".to_vec(), element2)));
@@ -1017,7 +1017,7 @@ fn test_get_subtree() {
         let subtree_storage = db
             .db
             .db
-            .get_prefixed_context_from_path([TEST_LEAF, b"key1", b"key2"]);
+            .get_storage_context([TEST_LEAF, b"key1", b"key2"]);
         let subtree = Merk::open(subtree_storage).expect("cannot open merk");
         let result_element = Element::get(&subtree, b"key3").unwrap();
         assert_eq!(result_element, Element::Item(b"ayy".to_vec()));
@@ -1042,7 +1042,7 @@ fn test_get_subtree() {
     .expect("successful value insert");
 
     // Retrieve subtree instance with transaction
-    let subtree_storage = db.db.db.get_prefixed_transactional_context_from_path(
+    let subtree_storage = db.db.db.get_transactional_storage_context(
         [TEST_LEAF, b"key1", b"innertree"],
         &transaction,
     );
@@ -1054,7 +1054,7 @@ fn test_get_subtree() {
     let subtree_storage = db
         .db
         .db
-        .get_prefixed_context_from_path([TEST_LEAF, b"key1", b"key2"]);
+        .get_storage_context([TEST_LEAF, b"key1", b"key2"]);
     let subtree = Merk::open(subtree_storage).expect("cannot open merk");
     let result_element = Element::get(&subtree, b"key3").unwrap();
     assert_eq!(result_element, Element::Item(b"ayy".to_vec()));
@@ -1368,6 +1368,9 @@ fn test_aux_with_transaction() {
     let db = make_grovedb();
     let transaction = db.start_transaction();
 
+    visualize_stderr(&db.db);
+    dbg!("ASS");
+    visualize_stderr(&(&db.db, Some(&transaction)));
     // Insert a regular data with aux data in the same transaction
     db.insert([TEST_LEAF], &key, element, Some(&transaction))
         .expect("unable to insert");

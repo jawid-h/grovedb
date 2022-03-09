@@ -172,6 +172,7 @@ impl GroveDb {
             return Ok(());
         }
         if path_iter.len() == 1 {
+            dbg!("KEKW");
             meta_storage_context_optional_tx!(self.db, transaction, meta_storage, {
                 let root_leaf_keys = Self::get_root_leaf_keys_internal(&meta_storage)?;
                 if !root_leaf_keys.contains_key(path_iter.next().expect("is not empty")) {
