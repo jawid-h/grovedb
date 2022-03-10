@@ -267,6 +267,7 @@ impl GroveDb {
         P: IntoIterator<Item = &'c [u8]>,
         <P as IntoIterator>::IntoIter: DoubleEndedIterator + ExactSizeIterator + Clone,
     {
+        dbg!("propagating changes!");
         let subtrees = self.get_subtrees();
 
         // Go up until only one element in path, which means a key of a root tree
@@ -295,6 +296,7 @@ impl GroveDb {
             Some(_) => self.temp_root_tree = root_tree,
         }
         self.store_root_leafs_keys_data(transaction)?;
+        dbg!("changes stored");
         Ok(())
     }
 

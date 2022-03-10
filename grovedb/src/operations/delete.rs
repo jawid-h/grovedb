@@ -70,6 +70,8 @@ impl GroveDb {
         P: IntoIterator<Item = &'a [u8]>,
         <P as IntoIterator>::IntoIter: DoubleEndedIterator + ExactSizeIterator + Clone,
     {
+        dbg!("grovedb: deleting in GroveDB");
+
         if transaction.is_none() && self.is_readonly {
             return Err(Error::DbIsInReadonlyMode);
         }
@@ -86,10 +88,12 @@ impl GroveDb {
                 // TODO: we shouldn't handle this context manually each time
                 let mut parent_merk = subtrees.borrow_mut(path_iter.clone(), transaction)?;
                 Element::delete(&mut parent_merk, &key, transaction)?;
+                dbg!("element deleted!");
                 Ok(())
             };
 
             if let Element::Tree(_) = element {
+                dbg!("deleging a tree");
                 let subtree_merk_path = path_iter.clone().chain(std::iter::once(key));
                 let subtrees_paths = self.find_subtrees(subtree_merk_path.clone(), transaction)?;
                 let is_empty = subtrees
@@ -117,6 +121,7 @@ impl GroveDb {
                     delete_element()?;
                 }
             } else {
+                dbg!("deleting and element");
                 delete_element()?;
             }
             self.propagate_changes(path_iter, transaction)?;
