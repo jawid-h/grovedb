@@ -9,11 +9,11 @@ use tempdir::TempDir;
 // use test::RunIgnored::No;
 use super::*;
 
-pub(crate) const TEST_LEAF: &[u8] = b"test_leaf";
+pub const TEST_LEAF: &[u8] = b"test_leaf";
 const ANOTHER_TEST_LEAF: &[u8] = b"test_leaf2";
 
 /// GroveDB wrapper to keep temp directory alive
-pub(crate) struct TempGroveDb {
+pub struct TempGroveDb {
     _tmp_dir: TempDir,
     db: GroveDb,
 }
@@ -33,7 +33,7 @@ impl Deref for TempGroveDb {
 }
 
 /// A helper method to create GroveDB with one leaf for a root tree
-pub(crate) fn make_grovedb() -> TempGroveDb {
+pub fn make_grovedb() -> TempGroveDb {
     let tmp_dir = TempDir::new("db").unwrap();
     let mut db = GroveDb::open(tmp_dir.path()).unwrap();
     add_test_leafs(&mut db);
@@ -1988,6 +1988,39 @@ fn test_get_range_to_inclusive_query_with_non_unique_subquery() {
 }
 
 #[test]
+fn test_get_range_to_inclusive_query_with_non_unique_subquery_and_key_out_of_bounds() {
+    let mut db = make_grovedb();
+    populate_tree_for_non_unique_range_subquery(&mut db);
+
+    let path = vec![TEST_LEAF.to_vec()];
+    let mut query = Query::new_with_direction(false);
+    query.insert_range_to_inclusive(..=5000_u32.to_be_bytes().to_vec());
+
+    let subquery_key: Vec<u8> = b"\0".to_vec();
+    let mut subquery = Query::new_with_direction(false);
+    subquery.insert_all();
+
+    query.set_subquery_key(subquery_key);
+    query.set_subquery(subquery);
+
+    let path_query = PathQuery::new_unsized(path, query.clone());
+
+    let (elements, _) = db
+        .get_path_query(&path_query, None)
+        .expect("expected successful get_path_query");
+
+    assert_eq!(elements.len(), 750);
+
+    let mut first_value = 1999_u32.to_be_bytes().to_vec();
+    first_value.append(&mut 149_u32.to_be_bytes().to_vec());
+    assert_eq!(elements[0], first_value);
+
+    let mut last_value = 1985_u32.to_be_bytes().to_vec();
+    last_value.append(&mut 100_u32.to_be_bytes().to_vec());
+    assert_eq!(elements[elements.len() - 1], last_value);
+}
+
+#[test]
 fn test_get_range_to_inclusive_query_with_unique_subquery() {
     let mut db = make_grovedb();
     populate_tree_for_unique_range_subquery(&mut db);
@@ -2113,6 +2146,41 @@ fn test_get_range_after_to_inclusive_query_with_non_unique_subquery() {
 
     let mut last_value = 1997_u32.to_be_bytes().to_vec();
     last_value.append(&mut 149_u32.to_be_bytes().to_vec());
+    assert_eq!(elements[elements.len() - 1], last_value);
+}
+
+#[test]
+fn test_get_range_after_to_inclusive_query_with_non_unique_subquery_and_key_out_of_bounds() {
+    let mut db = make_grovedb();
+    populate_tree_for_non_unique_range_subquery(&mut db);
+
+    let path = vec![TEST_LEAF.to_vec()];
+    let mut query = Query::new_with_direction(false);
+    query.insert_range_after_to_inclusive(
+        1995_u32.to_be_bytes().to_vec()..=5000_u32.to_be_bytes().to_vec(),
+    );
+
+    let subquery_key: Vec<u8> = b"\0".to_vec();
+    let mut subquery = Query::new_with_direction(false);
+    subquery.insert_all();
+
+    query.set_subquery_key(subquery_key);
+    query.set_subquery(subquery);
+
+    let path_query = PathQuery::new_unsized(path, query.clone());
+
+    let (elements, _) = db
+        .get_path_query(&path_query, None)
+        .expect("expected successful get_path_query");
+
+    assert_eq!(elements.len(), 200);
+
+    let mut first_value = 1999_u32.to_be_bytes().to_vec();
+    first_value.append(&mut 149_u32.to_be_bytes().to_vec());
+    assert_eq!(elements[0], first_value);
+
+    let mut last_value = 1996_u32.to_be_bytes().to_vec();
+    last_value.append(&mut 100_u32.to_be_bytes().to_vec());
     assert_eq!(elements[elements.len() - 1], last_value);
 }
 

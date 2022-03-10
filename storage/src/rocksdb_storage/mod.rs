@@ -112,6 +112,10 @@ impl RawIterator for RawPrefixedTransactionalIterator<'_> {
         iterator_call!(mut self, seek(make_prefixed_key(self.prefix.to_vec(), key)));
     }
 
+    fn seek_for_prev<K: AsRef<[u8]>>(&mut self, key: K) {
+        iterator_call!(mut self, seek_for_prev(make_prefixed_key(self.prefix.to_vec(), key)));
+    }
+
     fn next(&mut self) {
         iterator_call!(mut self, next());
     }
@@ -169,7 +173,7 @@ mod tests {
     impl TempPrefixedStorage {
         fn new() -> Self {
             let tmp_dir = TempDir::new("db").expect("cannot open tempdir");
-            TempPrefixedStorage {
+            Self {
                 storage: PrefixedRocksDbStorage::new(
                     default_rocksdb(tmp_dir.path()),
                     b"test".to_vec(),
